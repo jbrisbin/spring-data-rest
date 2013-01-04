@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
-import org.springframework.data.rest.webmvc.json.JsonSchemaController;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
@@ -32,9 +31,12 @@ public class RepositoryRestHandlerAdapter extends ResourceProcessorInvokingHandl
   }
 
   @Override protected boolean supportsInternal(HandlerMethod handlerMethod) {
+    Class<?> controllerType = handlerMethod.getBeanType();
     return super.supportsInternal(handlerMethod)
-        && (RepositoryRestController.class.isAssignableFrom(handlerMethod.getBeanType())
-        || JsonSchemaController.class.isAssignableFrom(handlerMethod.getBeanType()));
+        && (RepositoryRestController.class.isAssignableFrom(controllerType)
+        || RepositoryController.class.isAssignableFrom(controllerType)
+        || RepositoryEntityController.class.isAssignableFrom(controllerType)
+        || RepositorySearchController.class.isAssignableFrom(controllerType));
   }
 
 }
