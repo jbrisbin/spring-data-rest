@@ -236,8 +236,7 @@ public class RepositoryRestMvcConfiguration {
 
   /**
    * Special {@link org.springframework.web.servlet.HandlerAdapter} that only recognizes handler methods defined in
-   * the
-   * {@link RepositoryRestController} class.
+   * the {@link RepositoryRestController} class.
    *
    * @return
    */

@@ -53,6 +53,9 @@ public class BaseUriAwareResource<T> extends Resource<T> {
 
   @Override public Link getLink(String rel) {
     Link l = super.getLink(rel);
+    if(null == l) {
+      return null;
+    }
     if(!l.getHref().startsWith(baseUri.toString())) {
       return new Link(buildUri(baseUri, l.getHref()).toString(), l.getRel());
     } else {

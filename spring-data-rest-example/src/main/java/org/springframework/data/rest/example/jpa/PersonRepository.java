@@ -22,6 +22,8 @@ public interface PersonRepository extends PagingAndSortingRepository<Person, Lon
   @RestResource(rel = "firstname", path = "firstname")
   public Page<Person> findByFirstName(@Param("firstName") String firstName, Pageable pageable);
 
+  public Person findFirstPersonByFirstName(@Param("firstName") String firstName);
+
   public Page<Person> findByCreatedGreaterThan(@Param("date") Date date, Pageable pageable);
 
   @Query("select p from Person p where p.created > :date")

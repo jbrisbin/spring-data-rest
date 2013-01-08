@@ -6,6 +6,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.data.repository.support.DomainClassConverter;
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.rest.config.RepositoryRestConfiguration;
+import org.springframework.data.rest.repository.PersistentEntityToBaseUriAwareResourceConverter;
 import org.springframework.data.rest.repository.support.RepositoryEntityLinks;
 import org.springframework.data.rest.webmvc.support.JsonpResponse;
 import org.springframework.hateoas.EntityLinks;
