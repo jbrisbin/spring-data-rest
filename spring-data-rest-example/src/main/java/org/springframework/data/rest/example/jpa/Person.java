@@ -9,6 +9,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.PrePersist;
 import javax.validation.constraints.NotNull;
 
@@ -31,8 +32,10 @@ public class Person {
   @Description("A person's siblings")
   @OneToMany
   private List<Person> siblings = Collections.emptyList();
+  @OneToOne
+  private Person father;
   @Description("Timestamp this person object was created")
-  private Date created;
+  private Date   created;
 
   public Person() {
   }
@@ -76,6 +79,14 @@ public class Person {
 
   public void setSiblings(List<Person> siblings) {
     this.siblings = siblings;
+  }
+
+  public Person getFather() {
+    return father;
+  }
+
+  public void setFather(Person father) {
+    this.father = father;
   }
 
   public Date getCreated() {

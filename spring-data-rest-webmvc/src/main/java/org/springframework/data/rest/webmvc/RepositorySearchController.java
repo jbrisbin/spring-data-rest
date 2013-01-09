@@ -145,11 +145,11 @@ public class RepositorySearchController extends AbstractRepositoryRestController
     } else if(null == result) {
       resources = new BaseUriAwareResource(EMPTY_RESOURCE_LIST);
     } else {
-      Link selfLink = repoRequest.buildEntitySelfLink(result, conversionService);
-      resources = new BaseUriAwareResource(new PersistentEntityResource<Object>(repoRequest.getPersistentEntity(),
-                                                                                result,
-                                                                                selfLink)
-                                               .setBaseUri(repoRequest.getBaseUri()));
+      PersistentEntityResource per = PersistentEntityResource.wrap(repoRequest.getPersistentEntity(),
+                                                                   result,
+                                                                   repoRequest.getBaseUri());
+      per.add(repoRequest.buildEntitySelfLink(result, conversionService));
+      resources = per;
     }
     resources.setBaseUri(repoRequest.getBaseUri())
              .add(links);
@@ -189,13 +189,18 @@ public class RepositorySearchController extends AbstractRepositoryRestController
     return new Resource<Object>(EMPTY_RESOURCE_LIST, links);
   }
 
-  private Link resourceLink(RepositoryRestRequest repoRequest, Resource resource) {
-    ResourceMapping repoMapping = repoRequest.getRepositoryResourceMapping();
-    ResourceMapping entityMapping = repoRequest.getPersistentEntityResourceMapping();
-
-    Link selfLink = resource.getLink("self");
-    String rel = repoMapping.getRel() + "." + entityMapping.getRel();
-    return new Link(selfLink.getHref(), rel);
+  @RequestMapping(
+      value = "/{method}",
+      method = RequestMethod.GET,
+      produces = {
+          "application/javascript"
+      }
+  )
+  @ResponseBody
+  public JsonpResponse<? extends Resource<?>> jsonpQuery(RepositoryRestRequest repoRequest,
+                                                         @PathVariable String method)
+      throws ResourceNotFoundException {
+    return jsonpWrapResponse(repoRequest, query(repoRequest, method), HttpStatus.OK);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -214,9 +219,9 @@ public class RepositorySearchController extends AbstractRepositoryRestController
         continue;
       }
 
-      Link selfLink = repoRequest.buildEntitySelfLink(obj, conversionService);
-      resources.add(new PersistentEntityResource<Object>(persistentEntity, obj, selfLink)
-                        .setBaseUri(repoRequest.getBaseUri()));
+      PersistentEntityResource per = PersistentEntityResource.wrap(persistentEntity, obj, repoRequest.getBaseUri());
+      per.add(repoRequest.buildEntitySelfLink(obj, conversionService));
+      resources.add(per);
     }
     return new BaseUriAwareResource(resources)
         .setBaseUri(repoRequest.getBaseUri());

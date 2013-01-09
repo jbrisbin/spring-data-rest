@@ -26,7 +26,6 @@ import org.springframework.data.repository.support.DomainClassConverter;
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.rest.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.config.ResourceMapping;
-import org.springframework.data.rest.repository.PersistentEntityToBaseUriAwareResourceConverter;
 import org.springframework.data.rest.repository.invoke.MethodParameterConversionService;
 import org.springframework.data.rest.repository.support.ResourceMappingUtils;
 import org.springframework.data.rest.webmvc.support.BaseUriLinkBuilder;
@@ -50,17 +49,18 @@ import org.springframework.web.bind.annotation.ResponseBody;
  */
 public class AbstractRepositoryRestController implements ApplicationContextAware {
 
+  static final Resource<?>            EMPTY_RESOURCE      = new Resource<Object>(Collections.emptyList());
   static final Resources<Resource<?>> EMPTY_RESOURCES     = new Resources<Resource<?>>(Collections.<Resource<?>>emptyList());
   static final Iterable<Resource<?>>  EMPTY_RESOURCE_LIST = Collections.emptyList();
   static final TypeDescriptor         STRING_TYPE         = TypeDescriptor.valueOf(String.class);
 
   protected final Logger LOG = LoggerFactory.getLogger(getClass());
-  protected final Repositories                                    repositories;
-  protected final RepositoryRestConfiguration                     config;
-  protected final DomainClassConverter                            domainClassConverter;
-  protected final ConversionService                               conversionService;
-  protected final MethodParameterConversionService                methodParameterConversionService;
-  protected       ApplicationContext                              applicationContext;
+  protected final Repositories                     repositories;
+  protected final RepositoryRestConfiguration      config;
+  protected final DomainClassConverter             domainClassConverter;
+  protected final ConversionService                conversionService;
+  protected final MethodParameterConversionService methodParameterConversionService;
+  protected       ApplicationContext               applicationContext;
 
   @Autowired
   public AbstractRepositoryRestController(Repositories repositories,
@@ -257,6 +257,15 @@ public class AbstractRepositoryRestController implements ApplicationContextAware
                            .withRel(repoMapping.getRel() + "." + methodMapping.getRel()));
     }
     return links;
+  }
+
+  protected Link resourceLink(RepositoryRestRequest repoRequest, Resource resource) {
+    ResourceMapping repoMapping = repoRequest.getRepositoryResourceMapping();
+    ResourceMapping entityMapping = repoRequest.getPersistentEntityResourceMapping();
+
+    Link selfLink = resource.getLink("self");
+    String rel = repoMapping.getRel() + "." + entityMapping.getRel();
+    return new Link(selfLink.getHref(), rel);
   }
 
 }

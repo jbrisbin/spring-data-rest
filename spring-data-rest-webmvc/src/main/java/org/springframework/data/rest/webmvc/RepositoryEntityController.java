@@ -10,12 +10,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mapping.PersistentEntity;
+import org.springframework.data.mapping.PersistentProperty;
+import org.springframework.data.mapping.model.BeanWrapper;
 import org.springframework.data.repository.support.DomainClassConverter;
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.rest.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.config.ResourceMapping;
 import org.springframework.data.rest.repository.PersistentEntityResource;
-import org.springframework.data.rest.repository.PersistentEntityToBaseUriAwareResourceConverter;
 import org.springframework.data.rest.repository.context.AfterDeleteEvent;
 import org.springframework.data.rest.repository.context.AfterSaveEvent;
 import org.springframework.data.rest.repository.context.BeforeDeleteEvent;
@@ -127,10 +129,9 @@ public class RepositoryEntityController extends AbstractRepositoryRestController
     Resources<Resource<?>> resources = listEntities(repoRequest);
     List<Link> links = new ArrayList<Link>(resources.getLinks());
 
-    String rel = repoMapping.getRel() + "." + entityMapping.getRel();
     for(Resource<?> resource : resources.getContent()) {
       PersistentEntityResource<?> persistentEntityResource = (PersistentEntityResource<?>)resource;
-      links.add(new Link(persistentEntityResource.getLink("self").getHref(), rel));
+      links.add(resourceLink(repoRequest, persistentEntityResource));
     }
 
     return new Resources<Resource<?>>(EMPTY_RESOURCE_LIST, links);
@@ -211,9 +212,11 @@ public class RepositoryEntityController extends AbstractRepositoryRestController
       throw new ResourceNotFoundException();
     }
 
-    return PersistentEntityResource.wrap(repoRequest.getPersistentEntity(),
-                                         domainObj,
-                                         repoRequest.getBaseUri());
+    PersistentEntityResource per = PersistentEntityResource.wrap(repoRequest.getPersistentEntity(),
+                                                                 domainObj,
+                                                                 repoRequest.getBaseUri());
+    per.add(repoRequest.buildEntitySelfLink(domainObj, conversionService));
+    return per;
   }
 
   @SuppressWarnings({"unchecked"})
@@ -268,10 +271,12 @@ public class RepositoryEntityController extends AbstractRepositoryRestController
     Object obj = repoMethodInvoker.save(domainObj);
     applicationContext.publishEvent(new AfterSaveEvent(obj));
 
+    PersistentEntityResource per = PersistentEntityResource.wrap(repoRequest.getPersistentEntity(),
+                                                                 obj,
+                                                                 repoRequest.getBaseUri());
+    per.add(repoRequest.buildEntitySelfLink(obj, conversionService));
     return resourceResponse(null,
-                            PersistentEntityResource.wrap(repoRequest.getPersistentEntity(),
-                                                          obj,
-                                                          repoRequest.getBaseUri()),
+                            per,
                             HttpStatus.OK);
   }
 
@@ -296,7 +301,7 @@ public class RepositoryEntityController extends AbstractRepositoryRestController
 
   @SuppressWarnings({"unchecked"})
   @RequestMapping(
-      value = "{id}",
+      value = "/{id}",
       method = RequestMethod.DELETE
   )
   @ResponseBody
@@ -343,6 +348,122 @@ public class RepositoryEntityController extends AbstractRepositoryRestController
                                             @PathVariable String id)
       throws ResourceNotFoundException {
     return jsonpWrapResponse(repoRequest, deleteEntity(repoRequest, id));
+  }
+
+  @SuppressWarnings({"unchecked"})
+  @RequestMapping(
+      value = "/{id}/{property}",
+      method = RequestMethod.GET,
+      produces = {
+          "application/json",
+          "application/x-spring-data-verbose+json"
+      }
+  )
+  @ResponseBody
+  public ResponseEntity<Resource<?>> listLinkedEntities(RepositoryRestRequest repoRequest,
+                                                        @PathVariable String id,
+                                                        @PathVariable String property)
+      throws ResourceNotFoundException {
+    RepositoryMethodInvoker repoMethodInvoker = repoRequest.getRepositoryMethodInvoker();
+    if(!repoMethodInvoker.hasFindOne()) {
+      throw new ResourceNotFoundException();
+    }
+
+    Object domainObj = domainClassConverter.convert(id,
+                                                    STRING_TYPE,
+                                                    TypeDescriptor.valueOf(repoRequest.getPersistentEntity()
+                                                                                      .getType()));
+    if(null == domainObj) {
+      throw new ResourceNotFoundException();
+    }
+
+    String propertyName = repoRequest.getPersistentEntityResourceMapping().getNameForPath(property);
+    PersistentProperty prop = repoRequest.getPersistentEntity().getPersistentProperty(propertyName);
+    if(null == prop) {
+      throw new ResourceNotFoundException();
+    }
+
+    BeanWrapper wrapper = BeanWrapper.create(domainObj, conversionService);
+    Object propVal = wrapper.getProperty(prop);
+    if(null == propVal) {
+      throw new ResourceNotFoundException();
+    }
+
+    if(propVal instanceof Iterable) {
+      List<Resource<?>> resources = new ArrayList<Resource<?>>();
+      PersistentEntity entity = repositories.getPersistentEntity(prop.getComponentType());
+      for(Object obj : ((Iterable)propVal)) {
+        PersistentEntityResource per = PersistentEntityResource.wrap(entity, obj, repoRequest.getBaseUri());
+        Link selfLink = repoRequest.buildEntitySelfLink(obj, conversionService);
+        per.add(selfLink);
+        resources.add(per);
+      }
+
+      return resourceResponse(null, new Resource<Object>(resources), HttpStatus.OK);
+    } else {
+      PersistentEntityResource per = PersistentEntityResource.wrap(repositories.getPersistentEntity(prop.getType()),
+                                                                   propVal,
+                                                                   repoRequest.getBaseUri());
+      Link selfLink = repoRequest.buildEntitySelfLink(propVal, conversionService);
+      per.add(selfLink);
+
+      HttpHeaders headers = new HttpHeaders();
+      headers.set("Content-Location", selfLink.getHref());
+
+      return resourceResponse(headers, new Resource<Object>(per), HttpStatus.OK);
+    }
+  }
+
+  @SuppressWarnings({"unchecked"})
+  @RequestMapping(
+      value = "/{id}/{property}",
+      method = RequestMethod.GET,
+      produces = {
+          "application/x-spring-data-compact+json"
+      }
+  )
+  @ResponseBody
+  public ResponseEntity<Resource<?>> listLinkedEntitiesCompact(RepositoryRestRequest repoRequest,
+                                                               @PathVariable String id,
+                                                               @PathVariable String property)
+      throws ResourceNotFoundException {
+    ResponseEntity<Resource<?>> response = listLinkedEntities(repoRequest, id, property);
+    if(response.getStatusCode() != HttpStatus.OK) {
+      return response;
+    }
+
+    ResourceMapping repoMapping = repoRequest.getRepositoryResourceMapping();
+    ResourceMapping entityMapping = repoRequest.getPersistentEntityResourceMapping();
+    ResourceMapping propMapping = entityMapping.getResourceMappingFor(entityMapping.getNameForPath(property));
+    String propRel = (null != propMapping ? propMapping.getRel() : property);
+
+    Resource<?> resource = response.getBody();
+
+    List<Link> links = new ArrayList<Link>();
+
+    URI entityBaseUri = buildUri(repoRequest.getBaseUri(),
+                                 repoMapping.getPath(),
+                                 id,
+                                 property);
+
+    if(resource.getContent() instanceof Iterable) {
+      for(Resource<?> res : (Iterable<Resource<?>>)resource.getContent()) {
+        Link propLink = linkedResourceLink(res, entityBaseUri, propRel);
+        links.add(propLink);
+      }
+    } else {
+      links.add(new Link(entityBaseUri.toString(), propRel));
+    }
+
+    return resourceResponse(null, new Resource<Object>(EMPTY_RESOURCE_LIST, links), HttpStatus.OK);
+  }
+
+  private Link linkedResourceLink(Resource<?> resource,
+                                  URI baseUri,
+                                  String rel) {
+    Link selfLink = resource.getLink("self");
+    String objId = selfLink.getHref().substring(selfLink.getHref().lastIndexOf('/') + 1);
+    return new Link(buildUri(baseUri, objId).toString(), rel);
   }
 
 }

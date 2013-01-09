@@ -103,7 +103,6 @@ public class PersistentEntityToJsonSchemaConverter
         maybeAddAssociationLink(repositories,
                                 config,
                                 baseEntityUri,
-                                entityMapping.getRel(),
                                 propertyMapping,
                                 persistentProperty,
                                 links);
