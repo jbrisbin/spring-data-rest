@@ -14,8 +14,7 @@ import org.springframework.core.convert.converter.ConditionalGenericConverter;
  */
 public class UUIDConverter implements ConditionalGenericConverter {
 
-  public static final UUIDConverter INSTANCE = new UUIDConverter();
-
+  public static final  UUIDConverter        INSTANCE          = new UUIDConverter();
   private static final Set<ConvertiblePair> CONVERTIBLE_PAIRS = new HashSet<ConvertiblePair>();
 
   static {
@@ -28,8 +27,8 @@ public class UUIDConverter implements ConditionalGenericConverter {
       return UUID.class.isAssignableFrom(targetType.getType());
     }
 
-    return UUID.class.isAssignableFrom(targetType.getType())
-        && String.class.isAssignableFrom(sourceType.getType());
+    return UUID.class.isAssignableFrom(sourceType.getType())
+        && String.class.isAssignableFrom(targetType.getType());
   }
 
   @Override public Set<ConvertiblePair> getConvertibleTypes() {

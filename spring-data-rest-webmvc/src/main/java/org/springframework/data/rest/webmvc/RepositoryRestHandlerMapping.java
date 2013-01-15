@@ -109,6 +109,7 @@ public class RepositoryRestHandlerMapping extends RequestMappingHandlerMapping {
     return (RepositoryRestController.class.isAssignableFrom(beanType)
         || RepositoryController.class.isAssignableFrom(beanType)
         || RepositoryEntityController.class.isAssignableFrom(beanType)
+        || RepositoryPropertyReferenceController.class.isAssignableFrom(beanType)
         || RepositorySearchController.class.isAssignableFrom(beanType));
   }
 

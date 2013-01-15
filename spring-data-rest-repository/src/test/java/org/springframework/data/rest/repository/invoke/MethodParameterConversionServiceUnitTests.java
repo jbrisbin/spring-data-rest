@@ -22,12 +22,12 @@ import org.springframework.format.support.DefaultFormattingConversionService;
 public class MethodParameterConversionServiceUnitTests {
 
   static final SimpleDateFormat ISO8601_FMT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-  static final String           DATE_S      = "2010-01-01T12:00:00-0600";
+  static final String[]         DATE_S      = new String[]{"2010-01-01T12:00:00-0600"};
   static final Date DATE_D;
 
   static {
     try {
-      DATE_D = ISO8601_FMT.parse(DATE_S);
+      DATE_D = ISO8601_FMT.parse(DATE_S[0]);
     } catch(ParseException e) {
       throw new IllegalStateException(e);
     }

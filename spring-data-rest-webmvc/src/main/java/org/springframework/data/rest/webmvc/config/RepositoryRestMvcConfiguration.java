@@ -26,7 +26,9 @@ import org.springframework.data.rest.webmvc.PagingAndSortingMethodArgumentResolv
 import org.springframework.data.rest.webmvc.PersistentEntityResourceHandlerMethodArgumentResolver;
 import org.springframework.data.rest.webmvc.RepositoryController;
 import org.springframework.data.rest.webmvc.RepositoryEntityController;
+import org.springframework.data.rest.webmvc.RepositoryEntityLinksMethodArgumentResolver;
 import org.springframework.data.rest.webmvc.RepositoryInformationHandlerMethodArgumentResolver;
+import org.springframework.data.rest.webmvc.RepositoryPropertyReferenceController;
 import org.springframework.data.rest.webmvc.RepositoryRestController;
 import org.springframework.data.rest.webmvc.RepositoryRestHandlerAdapter;
 import org.springframework.data.rest.webmvc.RepositoryRestHandlerMapping;
@@ -34,6 +36,7 @@ import org.springframework.data.rest.webmvc.RepositoryRestRequestHandlerMethodAr
 import org.springframework.data.rest.webmvc.RepositorySearchController;
 import org.springframework.data.rest.webmvc.ServerHttpRequestMethodArgumentResolver;
 import org.springframework.data.rest.webmvc.convert.JsonpResponseHttpMessageConverter;
+import org.springframework.data.rest.webmvc.convert.UriListHttpMessageConverter;
 import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -44,10 +47,16 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver;
 
 /**
+ * Main application configuration for Spring Data REST. To customize how the exporter works, subclass this and override
+ * any of the {@literal configure*} methods.
+ * <p/>
+ * Any XML files located in the classpath under the {@literal META-INF/spring-data-rest/} path will be automatically
+ * found and loaded into this {@link org.springframework.context.ApplicationContext}.
+ *
  * @author Jon Brisbin
  */
 @Configuration
-@ImportResource("classpath*:META-INF/spring-data-rest/**/*-export.xml")
+@ImportResource("classpath*:META-INF/spring-data-rest/**/*.xml")
 public class RepositoryRestMvcConfiguration {
 
   private static final boolean IS_HIBERNATE4_MODULE_AVAILABLE = ClassUtils.isPresent(
@@ -117,6 +126,13 @@ public class RepositoryRestMvcConfiguration {
     return new AnnotatedHandlerBeanPostProcessor();
   }
 
+  /**
+   * For merging incoming objects materialized from JSON with existing domain objects loaded from the repository.
+   *
+   * @return
+   *
+   * @throws Exception
+   */
   @Bean public DomainObjectMerger domainObjectMerger() throws Exception {
     return new DomainObjectMerger(
         repositories().getObject(),
@@ -125,15 +141,12 @@ public class RepositoryRestMvcConfiguration {
   }
 
   /**
-   * The main REST exporter Spring MVC controller.
+   * The controller that handles top-level requests for listing what repositories are available.
    *
    * @return
+   *
+   * @throws Exception
    */
-  //  @Bean public RepositoryRestController repositoryRestController() {
-  //    RepositoryRestController controller = new RepositoryRestController();
-  //    configureRepositoryRestController(controller);
-  //    return controller;
-  //  }
   @Bean public RepositoryController repositoryController() throws Exception {
     return new RepositoryController(
         repositories().getObject(),
@@ -143,6 +156,13 @@ public class RepositoryRestMvcConfiguration {
     );
   }
 
+  /**
+   * The controller responsible for handling requests to display or those that modify an entity.
+   *
+   * @return
+   *
+   * @throws Exception
+   */
   @Bean public RepositoryEntityController repositoryEntityController() throws Exception {
     return new RepositoryEntityController(
         repositories().getObject(),
@@ -152,6 +172,29 @@ public class RepositoryRestMvcConfiguration {
     );
   }
 
+  /**
+   * The controller responsible for managing links of property references.
+   *
+   * @return
+   *
+   * @throws Exception
+   */
+  @Bean public RepositoryPropertyReferenceController propertyReferenceController() throws Exception {
+    return new RepositoryPropertyReferenceController(
+        repositories().getObject(),
+        config(),
+        domainClassConverter(),
+        defaultConversionService()
+    );
+  }
+
+  /**
+   * The controller responsible for performing searches.
+   *
+   * @return
+   *
+   * @throws Exception
+   */
   @Bean public RepositorySearchController repositorySearchController() throws Exception {
     return new RepositorySearchController(
         repositories().getObject(),
@@ -170,35 +213,72 @@ public class RepositoryRestMvcConfiguration {
     return new BaseUriMethodArgumentResolver();
   }
 
+  /**
+   * Resolves the paging and sorting information from the query parameters based on the current configuration settings.
+   *
+   * @return
+   */
   @Bean public PagingAndSortingMethodArgumentResolver pagingAndSortingMethodArgumentResolver() {
     return new PagingAndSortingMethodArgumentResolver();
   }
 
+  /**
+   * Turns an {@link javax.servlet.http.HttpServletRequest} into a {@link org.springframework.http.server.ServerHttpRequest}.
+   *
+   * @return
+   */
   @Bean public ServerHttpRequestMethodArgumentResolver serverHttpRequestMethodArgumentResolver() {
     return new ServerHttpRequestMethodArgumentResolver();
   }
 
+  /**
+   * Resolves the {@link org.springframework.data.repository.core.RepositoryInformation} for this request.
+   *
+   * @return
+   */
   @Bean public RepositoryInformationHandlerMethodArgumentResolver repoInfoMethodArgumentResolver() {
     return new RepositoryInformationHandlerMethodArgumentResolver();
   }
 
+  /**
+   * A convenience resolver that pulls together all the information needed to service a request.
+   *
+   * @return
+   */
   @Bean public RepositoryRestRequestHandlerMethodArgumentResolver repoRequestArgumentResolver() {
     return new RepositoryRestRequestHandlerMethodArgumentResolver();
   }
 
+  @Bean public RepositoryEntityLinksMethodArgumentResolver entityLinksMethodArgumentResolver() {
+    return new RepositoryEntityLinksMethodArgumentResolver();
+  }
+
+  /**
+   * Reads incoming JSON into an entity.
+   *
+   * @return
+   */
   @Bean public PersistentEntityResourceHandlerMethodArgumentResolver persistentEntityArgumentResolver() {
-    List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
-    messageConverters.add(jacksonHttpMessageConverter());
-    messageConverters.add(jsonpHttpMessageConverter());
+    List<HttpMessageConverter<?>> messageConverters = defaultMessageConverters();
     configureHttpMessageConverters(messageConverters);
 
     return new PersistentEntityResourceHandlerMethodArgumentResolver(messageConverters);
   }
 
+  /**
+   * Turns a domain class into a {@link org.springframework.data.rest.repository.json.JsonSchema}.
+   *
+   * @return
+   */
   @Bean public PersistentEntityToJsonSchemaConverter jsonSchemaConverter() {
     return new PersistentEntityToJsonSchemaConverter();
   }
 
+  /**
+   * The Jackson {@link ObjectMapper} used internally.
+   *
+   * @return
+   */
   @Bean public ObjectMapper objectMapper() {
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
@@ -218,6 +298,11 @@ public class RepositoryRestMvcConfiguration {
     return objectMapper;
   }
 
+  /**
+   * The {@link HttpMessageConverter} used by Spring MVC to read and write JSON data.
+   *
+   * @return
+   */
   @Bean public MappingJackson2HttpMessageConverter jacksonHttpMessageConverter() {
     MappingJackson2HttpMessageConverter jacksonConverter = new MappingJackson2HttpMessageConverter();
     jacksonConverter.setObjectMapper(objectMapper());
@@ -230,8 +315,22 @@ public class RepositoryRestMvcConfiguration {
     return jacksonConverter;
   }
 
+  /**
+   * The {@link HttpMessageConverter} used to create JSONP responses.
+   *
+   * @return
+   */
   @Bean public JsonpResponseHttpMessageConverter jsonpHttpMessageConverter() {
     return new JsonpResponseHttpMessageConverter(jacksonHttpMessageConverter());
+  }
+
+  /**
+   * The {@link HttpMessageConverter} used to create {@literal text/uri-list} responses.
+   *
+   * @return
+   */
+  @Bean public UriListHttpMessageConverter uriListHttpMessageConverter() {
+    return new UriListHttpMessageConverter();
   }
 
   /**
@@ -241,21 +340,12 @@ public class RepositoryRestMvcConfiguration {
    * @return
    */
   @Bean public RepositoryRestHandlerAdapter repositoryExporterHandlerAdapter() {
-    List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
-    messageConverters.add(jacksonHttpMessageConverter());
-    messageConverters.add(jsonpHttpMessageConverter());
+    List<HttpMessageConverter<?>> messageConverters = defaultMessageConverters();
     configureHttpMessageConverters(messageConverters);
 
     RepositoryRestHandlerAdapter handlerAdapter = new RepositoryRestHandlerAdapter();
     handlerAdapter.setMessageConverters(messageConverters);
-    handlerAdapter.setCustomArgumentResolvers(
-        Arrays.asList(baseUriMethodArgumentResolver(),
-                      pagingAndSortingMethodArgumentResolver(),
-                      serverHttpRequestMethodArgumentResolver(),
-                      repoInfoMethodArgumentResolver(),
-                      repoRequestArgumentResolver(),
-                      persistentEntityArgumentResolver())
-    );
+    handlerAdapter.setCustomArgumentResolvers(defaultMethodArgumentResolvers());
 
     return handlerAdapter;
   }
@@ -271,6 +361,11 @@ public class RepositoryRestMvcConfiguration {
     return new RepositoryRestHandlerMapping();
   }
 
+  /**
+   * Jackson module responsible for intelligently serializing and deserializing JSON that corresponds to an entity.
+   *
+   * @return
+   */
   @Bean public PersistentEntityJackson2Module persistentEntityJackson2Module() {
     return new PersistentEntityJackson2Module(defaultConversionService());
   }
@@ -282,24 +377,33 @@ public class RepositoryRestMvcConfiguration {
    */
   @Bean public ExceptionHandlerExceptionResolver exceptionHandlerExceptionResolver() {
     ExceptionHandlerExceptionResolver er = new ExceptionHandlerExceptionResolver();
-    er.setCustomArgumentResolvers(
-        Arrays.<HandlerMethodArgumentResolver>asList(
-            baseUriMethodArgumentResolver(),
-            serverHttpRequestMethodArgumentResolver(),
-            repoInfoMethodArgumentResolver(),
-            repoRequestArgumentResolver()
-        )
-    );
+    er.setCustomArgumentResolvers(defaultMethodArgumentResolvers());
 
-    List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
-    messageConverters.add(jacksonHttpMessageConverter());
-    messageConverters.add(jsonpHttpMessageConverter());
+    List<HttpMessageConverter<?>> messageConverters = defaultMessageConverters();
     configureHttpMessageConverters(messageConverters);
 
     er.setMessageConverters(messageConverters);
     configureExceptionHandlerExceptionResolver(er);
 
     return er;
+  }
+
+  private List<HttpMessageConverter<?>> defaultMessageConverters() {
+    List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();
+    messageConverters.add(jacksonHttpMessageConverter());
+    messageConverters.add(jsonpHttpMessageConverter());
+    messageConverters.add(uriListHttpMessageConverter());
+    return messageConverters;
+  }
+
+  private List<HandlerMethodArgumentResolver> defaultMethodArgumentResolvers() {
+    return Arrays.asList(baseUriMethodArgumentResolver(),
+                         pagingAndSortingMethodArgumentResolver(),
+                         serverHttpRequestMethodArgumentResolver(),
+                         repoInfoMethodArgumentResolver(),
+                         repoRequestArgumentResolver(),
+                         persistentEntityArgumentResolver(),
+                         entityLinksMethodArgumentResolver());
   }
 
   /**
@@ -331,15 +435,6 @@ public class RepositoryRestMvcConfiguration {
   }
 
   /**
-   * Configure the REST controller directly.
-   *
-   * @param controller
-   *     The {@link RepositoryRestController} instance.
-   */
-  protected void configureRepositoryRestController(RepositoryRestController controller) {
-  }
-
-  /**
    * Configure the {@link ExceptionHandlerExceptionResolver}.
    *
    * @param exceptionResolver
@@ -348,9 +443,21 @@ public class RepositoryRestMvcConfiguration {
   protected void configureExceptionHandlerExceptionResolver(ExceptionHandlerExceptionResolver exceptionResolver) {
   }
 
+  /**
+   * Configure the available {@link HttpMessageConverter}s by adding your own.
+   *
+   * @param messageConverters
+   *     The converters to be used by the system.
+   */
   protected void configureHttpMessageConverters(List<HttpMessageConverter<?>> messageConverters) {
   }
 
+  /**
+   * Configure the Jackson {@link ObjectMapper} directly.
+   *
+   * @param objectMapper
+   *     The {@literal ObjectMapper} to be used by the system.
+   */
   protected void configureJacksonObjectMapper(ObjectMapper objectMapper) {
   }
 

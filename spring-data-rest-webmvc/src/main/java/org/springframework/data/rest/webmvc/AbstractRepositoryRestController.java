@@ -41,6 +41,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -49,12 +50,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
  */
 public class AbstractRepositoryRestController implements ApplicationContextAware {
 
-  static final Resource<?>            EMPTY_RESOURCE      = new Resource<Object>(Collections.emptyList());
-  static final Resources<Resource<?>> EMPTY_RESOURCES     = new Resources<Resource<?>>(Collections.<Resource<?>>emptyList());
-  static final Iterable<Resource<?>>  EMPTY_RESOURCE_LIST = Collections.emptyList();
-  static final TypeDescriptor         STRING_TYPE         = TypeDescriptor.valueOf(String.class);
-
-  protected final Logger LOG = LoggerFactory.getLogger(getClass());
+  static final    Resource<?>            EMPTY_RESOURCE      = new Resource<Object>(Collections.emptyList());
+  static final    Resources<Resource<?>> EMPTY_RESOURCES     = new Resources<Resource<?>>(Collections.<Resource<?>>emptyList());
+  static final    Iterable<Resource<?>>  EMPTY_RESOURCE_LIST = Collections.emptyList();
+  static final    TypeDescriptor         STRING_TYPE         = TypeDescriptor.valueOf(String.class);
+  protected final Logger                 LOG                 = LoggerFactory.getLogger(getClass());
   protected final Repositories                     repositories;
   protected final RepositoryRestConfiguration      config;
   protected final DomainClassConverter             domainClassConverter;
@@ -95,7 +95,8 @@ public class AbstractRepositoryRestController implements ApplicationContextAware
   }
 
   @ExceptionHandler({
-                        NoSuchMethodError.class
+                        NoSuchMethodError.class,
+                        HttpRequestMethodNotSupportedException.class
                     })
   @ResponseBody
   public ResponseEntity<?> handleNoSuchMethod() {
@@ -138,7 +139,6 @@ public class AbstractRepositoryRestController implements ApplicationContextAware
   public ResponseEntity handleConstraintViolationException(ConstraintViolationException cve) {
     return response(null, new ConstraintViolationExceptionMessage(cve), HttpStatus.CONFLICT);
   }
-
 
   /**
    * Send a 409 Conflict in case of concurrent modification.

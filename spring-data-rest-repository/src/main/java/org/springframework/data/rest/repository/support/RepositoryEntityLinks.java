@@ -6,6 +6,7 @@ import static org.springframework.data.rest.repository.support.ResourceMappingUt
 import java.net.URI;
 
 import org.springframework.data.mapping.PersistentEntity;
+import org.springframework.data.mapping.PersistentProperty;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.rest.config.RepositoryRestConfiguration;
@@ -85,7 +86,14 @@ public class RepositoryEntityLinks extends AbstractEntityLinks {
     }
 
     @Override public LinkBuilder slash(Object object) {
-      builder.pathSegment(String.format("%s", object));
+      String path = String.format("%s", object);
+      if(object instanceof PersistentProperty) {
+        String propName = ((PersistentProperty)object).getName();
+        if(entityMapping.hasResourceMappingFor(propName)) {
+          path = entityMapping.getResourceMappingFor(propName).getPath();
+        }
+      }
+      builder.pathSegment(path);
       return this;
     }
 

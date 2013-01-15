@@ -36,6 +36,7 @@ public class RepositoryRestHandlerAdapter extends ResourceProcessorInvokingHandl
         && (RepositoryRestController.class.isAssignableFrom(controllerType)
         || RepositoryController.class.isAssignableFrom(controllerType)
         || RepositoryEntityController.class.isAssignableFrom(controllerType)
+        || RepositoryPropertyReferenceController.class.isAssignableFrom(controllerType)
         || RepositorySearchController.class.isAssignableFrom(controllerType));
   }
 
