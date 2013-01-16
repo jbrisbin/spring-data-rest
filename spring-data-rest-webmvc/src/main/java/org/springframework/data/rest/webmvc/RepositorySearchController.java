@@ -119,6 +119,17 @@ public class RepositorySearchController extends AbstractRepositoryRestController
         } else {
           String paramName = repoMethod.getParameterNames().get(i);
           String[] queryParamVals = repoRequest.getRequest().getParameterValues(paramName);
+          if(null == queryParamVals) {
+            if(paramName.startsWith("arg")) {
+              throw new IllegalArgumentException("No @Param annotation found on query method "
+                                                     + repoMethod.getMethod().getName()
+                                                     + " for parameter " + param.getParameterName());
+            } else {
+              throw new IllegalArgumentException("No query parameter specified for "
+                                                     + repoMethod.getMethod().getName() + " param '"
+                                                     + paramName + "'");
+            }
+          }
           paramValues[i] = methodParameterConversionService.convert(queryParamVals, param);
         }
       }

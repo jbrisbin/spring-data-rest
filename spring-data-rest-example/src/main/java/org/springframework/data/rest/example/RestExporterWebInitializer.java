@@ -4,6 +4,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 
+import org.springframework.data.rest.example.gemfire.GemfireRepositoryConfig;
 import org.springframework.data.rest.example.jpa.JpaRepositoryConfig;
 import org.springframework.data.rest.example.mongodb.MongoDbRepositoryConfig;
 import org.springframework.data.rest.webmvc.RepositoryRestDispatcherServlet;
@@ -18,7 +19,11 @@ public class RestExporterWebInitializer implements WebApplicationInitializer {
 
   @Override public void onStartup(ServletContext servletContext) throws ServletException {
     AnnotationConfigWebApplicationContext rootCtx = new AnnotationConfigWebApplicationContext();
-    rootCtx.register(JpaRepositoryConfig.class, MongoDbRepositoryConfig.class);
+    rootCtx.register(
+        JpaRepositoryConfig.class,
+        MongoDbRepositoryConfig.class,
+        GemfireRepositoryConfig.class
+    );
 
     servletContext.addListener(new ContextLoaderListener(rootCtx));
 

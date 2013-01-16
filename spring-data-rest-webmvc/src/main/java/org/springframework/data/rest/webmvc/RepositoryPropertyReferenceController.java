@@ -239,6 +239,7 @@ public class RepositoryPropertyReferenceController extends AbstractRepositoryRes
 
   @SuppressWarnings({"unchecked"})
   @RequestMapping(
+      value = "/{propertyId}",
       method = RequestMethod.GET,
       produces = {
           "application/javascript"

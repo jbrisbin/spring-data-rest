@@ -8,8 +8,8 @@ import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.PrePersist;
 import javax.validation.constraints.NotNull;
 
@@ -26,16 +26,13 @@ public class Person {
   @Id @GeneratedValue private Long   id;
   @Description("A person's first name")
   private                     String firstName;
-  @NotNull
   @Description("A person's last name")
-  private                     String lastName;
+  @NotNull private            String lastName;
   @Description("A person's siblings")
-  @OneToMany
-  private List<Person> siblings = Collections.emptyList();
-  @OneToOne
-  private Person father;
+  @ManyToMany private List<Person> siblings = Collections.emptyList();
+  @ManyToOne private Person father;
   @Description("Timestamp this person object was created")
-  private Date   created;
+  private            Date   created;
 
   public Person() {
   }

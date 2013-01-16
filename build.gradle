@@ -16,7 +16,7 @@ ext {
   sdCommonsVersion = "1.5.0.BUILD-SNAPSHOT"
   sdJpaVersion = "1.3.0.BUILD-SNAPSHOT"
   sdMongoVersion = "1.2.0.BUILD-SNAPSHOT"
-  sdGemfireVersion = "1.2.1.RELEASE"
+  sdGemfireVersion = "1.3.0.BUILD-SNAPSHOT"
 
   // Libraries
   guavaVersion = "13.0.1"

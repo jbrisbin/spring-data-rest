@@ -19,21 +19,21 @@ import org.springframework.data.repository.core.RepositoryInformation;
  */
 public class RepositoryMethodInvoker implements PagingAndSortingRepository<Object, Serializable> {
 
-  private final Object           repository;
-  private       RepositoryMethod saveOne;
-  private       RepositoryMethod saveSome;
-  private       RepositoryMethod findOne;
-  private       RepositoryMethod exists;
-  private       RepositoryMethod findAll;
-  private       RepositoryMethod findAllSorted;
-  private       RepositoryMethod findAllPaged;
-  private       RepositoryMethod findSome;
-  private       RepositoryMethod count;
-  private       RepositoryMethod deleteOne;
-  private       RepositoryMethod deleteOneById;
-  private       RepositoryMethod deleteSome;
-  private       RepositoryMethod deleteAll;
+  private final Object repository;
   private final Map<String, RepositoryMethod> queryMethods = new HashMap<String, RepositoryMethod>();
+  private RepositoryMethod saveOne;
+  private RepositoryMethod saveSome;
+  private RepositoryMethod findOne;
+  private RepositoryMethod exists;
+  private RepositoryMethod findAll;
+  private RepositoryMethod findAllSorted;
+  private RepositoryMethod findAllPaged;
+  private RepositoryMethod findSome;
+  private RepositoryMethod count;
+  private RepositoryMethod deleteOne;
+  private RepositoryMethod deleteOneById;
+  private RepositoryMethod deleteSome;
+  private RepositoryMethod deleteAll;
 
   @SuppressWarnings({"unchecked"})
   public RepositoryMethodInvoker(Object repository,
@@ -48,6 +48,7 @@ public class RepositoryMethodInvoker implements PagingAndSortingRepository<Objec
         int cardinality = method.getParameterTypes().length;
         Class<?> paramType = (cardinality == 1 ? method.getParameterTypes()[0] : null);
         boolean someMethod = (null != paramType && Iterable.class.isAssignableFrom(paramType));
+        boolean byIdMethod = (null != paramType && paramType == Serializable.class);
         boolean sortable = (null != paramType && Sort.class.isAssignableFrom(paramType));
         boolean pageable = (null != paramType && Pageable.class.isAssignableFrom(paramType));
         RepositoryMethod repoMethod = new RepositoryMethod(method);
@@ -70,10 +71,10 @@ public class RepositoryMethodInvoker implements PagingAndSortingRepository<Objec
           findAll = repoMethod;
         } else if("count".equals(name)) {
           count = repoMethod;
+        } else if("delete".equals(name) && byIdMethod) {
+          deleteOneById = repoMethod;
         } else if("delete".equals(name) && someMethod) {
           deleteSome = repoMethod;
-        } else if("delete".equals(name) && persistentEntity.getIdProperty().getType().isAssignableFrom(paramType)) {
-          deleteOneById = repoMethod;
         } else if("delete".equals(name)) {
           deleteOne = repoMethod;
         } else if("deleteAll".equals(name)) {
@@ -156,7 +157,7 @@ public class RepositoryMethodInvoker implements PagingAndSortingRepository<Objec
   }
 
   @Override public void delete(Serializable serializable) {
-    invokeMethod(deleteOne.getMethod(), repository, serializable);
+    invokeMethod(deleteOneById.getMethod(), repository, serializable);
   }
 
   public boolean hasDeleteOneById() {

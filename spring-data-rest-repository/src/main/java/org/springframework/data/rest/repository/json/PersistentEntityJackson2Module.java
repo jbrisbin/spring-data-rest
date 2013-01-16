@@ -54,27 +54,19 @@ public class PersistentEntityJackson2Module extends SimpleModule implements Init
 
   private static final Logger         LOG      = LoggerFactory.getLogger(PersistentEntityJackson2Module.class);
   private static final TypeDescriptor URI_TYPE = TypeDescriptor.valueOf(URI.class);
-
+  private final ConversionService           conversionService;
   @Autowired
   private       Repositories                repositories;
   @Autowired
   private       RepositoryRestConfiguration config;
   @Autowired
   private       UriDomainClassConverter     uriDomainClassConverter;
-  private final ConversionService           conversionService;
 
   public PersistentEntityJackson2Module(ConversionService conversionService) {
     super(new Version(1, 1, 0, "BUILD-SNAPSHOT", "org.springframework.data.rest", "jackson-module"));
     this.conversionService = conversionService;
 
     addSerializer(new ResourceSerializer());
-  }
-
-  @SuppressWarnings({"unchecked"})
-  @Override public void afterPropertiesSet() throws Exception {
-    for(Class<?> domainType : repositories) {
-      addDeserializer(domainType, new ResourceDeserializer(repositories.getPersistentEntity(domainType)));
-    }
   }
 
   public static boolean maybeAddAssociationLink(Repositories repositories,
@@ -113,6 +105,13 @@ public class PersistentEntityJackson2Module extends SimpleModule implements Init
     }
     // This is not an association. No Link was added.
     return false;
+  }
+
+  @SuppressWarnings({"unchecked"})
+  @Override public void afterPropertiesSet() throws Exception {
+    for(Class<?> domainType : repositories) {
+      addDeserializer(domainType, new ResourceDeserializer(repositories.getPersistentEntity(domainType)));
+    }
   }
 
   private class ResourceDeserializer<T extends Object> extends StdDeserializer<T> {
@@ -167,6 +166,9 @@ public class PersistentEntityJackson2Module extends SimpleModule implements Init
             PersistentProperty persistentProperty = persistentEntity.getPersistentProperty(name);
             if(null == persistentProperty) {
               String errMsg = "Property '" + name + "' not found for entity " + getValueClass().getName();
+              if(null == domainMapping) {
+                throw new HttpMessageNotReadableException(errMsg);
+              }
               String propertyName = domainMapping.getNameForPath(name);
               if(null == propertyName) {
                 throw new HttpMessageNotReadableException(errMsg);

@@ -2,23 +2,17 @@ package org.springframework.data.rest.webmvc;
 
 import static org.springframework.data.rest.core.util.UriUtils.*;
 
+import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import javax.annotation.Nullable;
 
-import com.google.common.base.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.PersistentProperty;
 import org.springframework.data.mapping.model.BeanWrapper;
-import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.support.DomainClassConverter;
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.rest.config.RepositoryRestConfiguration;
@@ -41,7 +35,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -285,6 +278,9 @@ public class RepositoryEntityController extends AbstractRepositoryRestController
                                                     TypeDescriptor.valueOf(repoRequest.getPersistentEntity()
                                                                                       .getType()));
     if(null == domainObj) {
+      BeanWrapper incomingWrapper = BeanWrapper.create(incoming.getContent(), conversionService);
+      PersistentProperty idProp = incoming.getPersistentEntity().getIdProperty();
+      incomingWrapper.setProperty(idProp, conversionService.convert(id, idProp.getType()));
       return createNewEntity(repoRequest, incoming);
     }
 
@@ -346,12 +342,14 @@ public class RepositoryEntityController extends AbstractRepositoryRestController
     }
 
     applicationContext.publishEvent(new BeforeDeleteEvent(domainObj));
-    if(repoMethodInvoker.hasDeleteOne()) {
-      repoMethodInvoker.delete(domainObj);
-    } else if(repoMethodInvoker.hasDeleteOneById()) {
-      Class<?> idType = repoRequest.getPersistentEntity().getIdProperty().getType();
+    if(repoMethodInvoker.hasDeleteOneById()) {
+      Class<? extends Serializable> idType = (Class<? extends Serializable>)repoRequest.getPersistentEntity()
+                                                                                       .getIdProperty()
+                                                                                       .getType();
       Object idVal = conversionService.convert(id, idType);
-      repoMethodInvoker.delete(idVal);
+      repoMethodInvoker.delete((Serializable)idVal);
+    } else if(repoMethodInvoker.hasDeleteOne()) {
+      repoMethodInvoker.delete(domainObj);
     }
     applicationContext.publishEvent(new AfterDeleteEvent(domainObj));
 
