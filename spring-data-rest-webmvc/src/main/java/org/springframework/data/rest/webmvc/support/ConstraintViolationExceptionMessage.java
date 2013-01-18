@@ -6,6 +6,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.context.MessageSource;
 
 /**
  * @author Jon Brisbin
@@ -15,10 +16,10 @@ public class ConstraintViolationExceptionMessage {
   private final ConstraintViolationException cve;
   private final List<ConstraintViolationMessage> messages = new ArrayList<ConstraintViolationMessage>();
 
-  public ConstraintViolationExceptionMessage(ConstraintViolationException cve) {
+  public ConstraintViolationExceptionMessage(ConstraintViolationException cve, MessageSource msgSrc) {
     this.cve = cve;
     for(ConstraintViolation cv : cve.getConstraintViolations()) {
-      messages.add(new ConstraintViolationMessage(cv));
+      messages.add(new ConstraintViolationMessage(cv, msgSrc));
     }
   }
 

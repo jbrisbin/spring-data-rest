@@ -21,6 +21,10 @@ import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.rest.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.config.ResourceMapping;
 import org.springframework.data.rest.repository.PersistentEntityResource;
+import org.springframework.data.rest.repository.context.AfterLinkDeleteEvent;
+import org.springframework.data.rest.repository.context.AfterLinkSaveEvent;
+import org.springframework.data.rest.repository.context.BeforeLinkDeleteEvent;
+import org.springframework.data.rest.repository.context.BeforeLinkSaveEvent;
 import org.springframework.data.rest.repository.invoke.RepositoryMethodInvoker;
 import org.springframework.data.rest.webmvc.support.JsonpResponse;
 import org.springframework.hateoas.Link;
@@ -316,7 +320,9 @@ public class RepositoryPropertyReferenceController extends AbstractRepositoryRes
           prop.wrapper.setProperty(prop.property, propVal);
         }
 
-        repoMethodInvoker.save(prop.wrapper.getBean());
+        applicationContext.publishEvent(new BeforeLinkSaveEvent(prop.wrapper.getBean(), prop.propertyValue));
+        Object result = repoMethodInvoker.save(prop.wrapper.getBean());
+        applicationContext.publishEvent(new AfterLinkSaveEvent(result, prop.propertyValue));
         return null;
       }
     };
@@ -394,7 +400,9 @@ public class RepositoryPropertyReferenceController extends AbstractRepositoryRes
           prop.wrapper.setProperty(prop.property, null);
         }
 
-        repoMethodInvoker.save(prop.wrapper.getBean());
+        applicationContext.publishEvent(new BeforeLinkDeleteEvent(prop.wrapper.getBean(), prop.propertyValue));
+        Object result = repoMethodInvoker.save(prop.wrapper.getBean());
+        applicationContext.publishEvent(new AfterLinkDeleteEvent(result, prop.propertyValue));
         return null;
       }
     };

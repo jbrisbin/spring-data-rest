@@ -67,7 +67,7 @@ public class RepositorySearchController extends AbstractRepositoryRestController
       }
   )
   @ResponseBody
-  public JsonpResponse<?> listJsonp(RepositoryRestRequest repoRequest) {
+  public JsonpResponse<?> jsonpList(RepositoryRestRequest repoRequest) {
     return jsonpWrapResponse(repoRequest, list(repoRequest), HttpStatus.OK);
   }
 

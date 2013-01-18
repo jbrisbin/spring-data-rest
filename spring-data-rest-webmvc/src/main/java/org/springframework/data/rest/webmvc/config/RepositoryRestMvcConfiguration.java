@@ -29,7 +29,6 @@ import org.springframework.data.rest.webmvc.RepositoryEntityController;
 import org.springframework.data.rest.webmvc.RepositoryEntityLinksMethodArgumentResolver;
 import org.springframework.data.rest.webmvc.RepositoryInformationHandlerMethodArgumentResolver;
 import org.springframework.data.rest.webmvc.RepositoryPropertyReferenceController;
-import org.springframework.data.rest.webmvc.RepositoryRestController;
 import org.springframework.data.rest.webmvc.RepositoryRestHandlerAdapter;
 import org.springframework.data.rest.webmvc.RepositoryRestHandlerMapping;
 import org.springframework.data.rest.webmvc.RepositoryRestRequestHandlerMethodArgumentResolver;
@@ -335,7 +334,7 @@ public class RepositoryRestMvcConfiguration {
 
   /**
    * Special {@link org.springframework.web.servlet.HandlerAdapter} that only recognizes handler methods defined in
-   * the {@link RepositoryRestController} class.
+   * the provided controller classes.
    *
    * @return
    */
@@ -352,8 +351,7 @@ public class RepositoryRestMvcConfiguration {
 
   /**
    * Special {@link org.springframework.web.servlet.HandlerMapping} that only recognizes handler methods defined in
-   * the
-   * {@link RepositoryRestController} class.
+   * the provided controller classes.
    *
    * @return
    */

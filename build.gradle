@@ -13,6 +13,7 @@ ext {
   //springVersion = "3.2.0.RELEASE"
   hateoasVersion = "0.4.0.BUILD-SNAPSHOT"
   springPluginVersion = "0.8.0.BUILD-SNAPSHOT"
+  springSecurityVersion = "3.1.3.RELEASE"
   sdCommonsVersion = "1.5.0.BUILD-SNAPSHOT"
   sdJpaVersion = "1.3.0.BUILD-SNAPSHOT"
   sdMongoVersion = "1.2.0.BUILD-SNAPSHOT"
@@ -32,6 +33,7 @@ ext {
   junitVersion = "4.11"
   hamcrestVersion = "1.3"
   jmockVersion = "2.6.0-RC2"
+  jettyVersion = "8.1.8.v20121106"
 }
 
 buildscript {
@@ -185,7 +187,6 @@ project("spring-data-rest-repository") {
 }
 
 project("spring-data-rest-webmvc") {
-  apply plugin: "war"
   description = "Spring Data REST MVC components."
 
   dependencies {
@@ -196,15 +197,17 @@ project("spring-data-rest-webmvc") {
     compile("org.springframework:spring-webmvc:$springVersion") { force = true }
 
     // APIS
-    providedCompile "javax.servlet:javax.servlet-api:3.0.1"
+    compile("javax.servlet:javax.servlet-api:3.0.1", provided)
 
     // Testing
-    testCompile "org.eclipse.jetty:jetty-servlet:8.1.8.v20121106"
+    testCompile "org.eclipse.jetty:jetty-servlet:$jettyVersion"
+    testCompile "org.eclipse.jetty:jetty-webapp:$jettyVersion"
     testCompile "org.mozilla:rhino:1.7R4"
   }
 }
 
 project("spring-data-rest-example") {
+  apply plugin: "war"
   description = "Spring Data REST example web application."
 
   dependencies {
@@ -220,6 +223,10 @@ project("spring-data-rest-example") {
     compile "org.springframework.data:spring-data-jpa:$sdJpaVersion"
     compile "org.springframework.data:spring-data-mongodb:$sdMongoVersion"
     compile "org.springframework.data:spring-data-gemfire:$sdGemfireVersion"
+
+    // Spring Security
+    compile "org.springframework.security:spring-security-config:$springSecurityVersion"
+    compile "org.springframework.security:spring-security-web:$springSecurityVersion"
 
     // JODA
     compile "joda-time:joda-time:$jodaVersion"

@@ -26,12 +26,14 @@ import org.springframework.data.repository.support.DomainClassConverter;
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.rest.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.config.ResourceMapping;
+import org.springframework.data.rest.repository.RepositoryConstraintViolationException;
 import org.springframework.data.rest.repository.invoke.MethodParameterConversionService;
 import org.springframework.data.rest.repository.support.ResourceMappingUtils;
 import org.springframework.data.rest.webmvc.support.BaseUriLinkBuilder;
 import org.springframework.data.rest.webmvc.support.ConstraintViolationExceptionMessage;
 import org.springframework.data.rest.webmvc.support.ExceptionMessage;
 import org.springframework.data.rest.webmvc.support.JsonpResponse;
+import org.springframework.data.rest.webmvc.support.RepositoryConstraintViolationExceptionMessage;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.LinkBuilder;
 import org.springframework.hateoas.Resource;
@@ -137,7 +139,19 @@ public class AbstractRepositoryRestController implements ApplicationContextAware
                     })
   @ResponseBody
   public ResponseEntity handleConstraintViolationException(ConstraintViolationException cve) {
-    return response(null, new ConstraintViolationExceptionMessage(cve), HttpStatus.CONFLICT);
+    return response(null,
+                    new ConstraintViolationExceptionMessage(cve, applicationContext),
+                    HttpStatus.CONFLICT);
+  }
+
+  @ExceptionHandler({
+                        RepositoryConstraintViolationException.class
+                    })
+  @ResponseBody
+  public ResponseEntity handleRepositoryConstraintViolationException(RepositoryConstraintViolationException rcve) {
+    return response(null,
+                    new RepositoryConstraintViolationExceptionMessage(rcve, applicationContext),
+                    HttpStatus.CONFLICT);
   }
 
   /**

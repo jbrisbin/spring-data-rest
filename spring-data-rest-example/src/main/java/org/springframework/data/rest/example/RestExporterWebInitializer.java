@@ -1,5 +1,7 @@
 package org.springframework.data.rest.example;
 
+import java.util.EnumSet;
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
@@ -11,6 +13,7 @@ import org.springframework.data.rest.webmvc.RepositoryRestDispatcherServlet;
 import org.springframework.web.WebApplicationInitializer;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+import org.springframework.web.filter.DelegatingFilterProxy;
 
 /**
  * @author Jon Brisbin
@@ -26,6 +29,12 @@ public class RestExporterWebInitializer implements WebApplicationInitializer {
     );
 
     servletContext.addListener(new ContextLoaderListener(rootCtx));
+    servletContext.addFilter("springSecurity", DelegatingFilterProxy.class);
+    servletContext.getFilterRegistration("springSecurity").addMappingForUrlPatterns(
+        EnumSet.of(DispatcherType.REQUEST),
+        false,
+        "/*"
+    );
 
     AnnotationConfigWebApplicationContext webCtx = new AnnotationConfigWebApplicationContext();
     webCtx.register(RestExporterExampleRestConfig.class);
@@ -34,6 +43,7 @@ public class RestExporterWebInitializer implements WebApplicationInitializer {
     ServletRegistration.Dynamic reg = servletContext.addServlet("rest-exporter", dispatcherServlet);
     reg.setLoadOnStartup(1);
     reg.addMapping("/*");
+
   }
 
 }

@@ -106,8 +106,7 @@ public class RepositoryRestHandlerMapping extends RequestMappingHandlerMapping {
   }
 
   @Override protected boolean isHandler(Class<?> beanType) {
-    return (RepositoryRestController.class.isAssignableFrom(beanType)
-        || RepositoryController.class.isAssignableFrom(beanType)
+    return (RepositoryController.class.isAssignableFrom(beanType)
         || RepositoryEntityController.class.isAssignableFrom(beanType)
         || RepositoryPropertyReferenceController.class.isAssignableFrom(beanType)
         || RepositorySearchController.class.isAssignableFrom(beanType));

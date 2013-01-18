@@ -23,16 +23,16 @@ import org.springframework.data.rest.repository.annotation.Description;
 @Entity
 public class Person {
 
-  @Id @GeneratedValue private Long   id;
+  private Long   id;
   @Description("A person's first name")
-  private                     String firstName;
+  private String firstName;
   @Description("A person's last name")
-  @NotNull private            String lastName;
+  private String lastName;
   @Description("A person's siblings")
-  @ManyToMany private List<Person> siblings = Collections.emptyList();
-  @ManyToOne private Person father;
+  private List<Person> siblings = Collections.emptyList();
+  private Person father;
   @Description("Timestamp this person object was created")
-  private            Date   created;
+  private Date   created;
 
   public Person() {
   }
@@ -42,8 +42,12 @@ public class Person {
     this.lastName = lastName;
   }
 
-  public Long getId() {
+  @Id @GeneratedValue public Long getId() {
     return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
   }
 
   public String getFirstName() {
@@ -58,6 +62,7 @@ public class Person {
     return lastName;
   }
 
+  @NotNull
   public void setLastName(String lastName) {
     this.lastName = lastName;
   }
@@ -70,7 +75,7 @@ public class Person {
     return this;
   }
 
-  public List<Person> getSiblings() {
+  @ManyToMany public List<Person> getSiblings() {
     return siblings;
   }
 
@@ -78,7 +83,7 @@ public class Person {
     this.siblings = siblings;
   }
 
-  public Person getFather() {
+  @ManyToOne public Person getFather() {
     return father;
   }
 
@@ -88,6 +93,9 @@ public class Person {
 
   public Date getCreated() {
     return created;
+  }
+
+  public void setCreated(Date created) {
   }
 
   @PrePersist
