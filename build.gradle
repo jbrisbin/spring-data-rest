@@ -135,7 +135,7 @@ project("spring-data-rest-core") {
     }
 
     // Spring Data Commons
-    providedCompile("org.springframework.data:spring-data-commons-core:$sdCommonsVersion") {
+    providedCompile("org.springframework.data:spring-data-commons:$sdCommonsVersion") {
       exclude module: "slf4j-api"
       exclude module: "jcl-over-slf4j"
     }

@@ -17,7 +17,6 @@ public abstract class AbstractServerEnabledTest {
     if(null == server) {
       server = new Server(0);
 
-      WebAppContext
     }
   }
 
